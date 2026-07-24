@@ -26,6 +26,11 @@ export interface JobResult {
   binary?: { data: Buffer; ext: string };
   /** Extra files written next to the output, keyed by filename suffix. */
   sidecars?: Array<{ suffix: string; data: unknown }>;
+  /**
+   * The output is metadata (a listing, a transcription), not generated
+   * files: write it as JSON and never download URLs found inside it.
+   */
+  dataOnly?: boolean;
 }
 
 export interface RunArgs {

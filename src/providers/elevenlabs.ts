@@ -124,7 +124,7 @@ async function run({ ref, input, signal, onUpdate }: RunArgs): Promise<JobResult
         sidecars: alignment ? [{ suffix: '.timing.json', data: { words: wordsFromAlignment(alignment) } }] : undefined,
       };
     }
-    return { output: data, requestId };
+    return { output: data, requestId, dataOnly: GET_REFS[ref] !== undefined };
   }
 
   const bytes = Buffer.from(await res.arrayBuffer());

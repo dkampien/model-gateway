@@ -197,7 +197,7 @@ export async function runJob(opts: RunJobOptions): Promise<RunJobSuccess> {
     fs.writeFileSync(outPath, result.binary.data);
     outPaths.push(outPath);
   } else {
-    const urls = collectFileUrls(result.output);
+    const urls = result.dataOnly ? [] : collectFileUrls(result.output);
     if (urls.length === 1) {
       const outPath = `${base}${forcedExt ?? extFromUrl(urls[0], '.bin')}`;
       await download(urls[0], outPath);
