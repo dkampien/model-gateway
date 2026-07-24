@@ -14,6 +14,28 @@ One CLI + TypeScript library for generating images, video, voice, music, and tra
 3. **Live schemas.** `gen inspect` fetches the endpoint's current schema from the provider (cached in `schema-cache/`). The provider's API is the only copy that is never stale.
 4. **The provider validates.** The gateway never checks your input against the schema; it delivers the provider's own complaint, field by field when available.
 
+## For agents (how to operate this with zero prior context)
+
+Knowledge is layered by how fast it goes stale. Read in this order, fetch only what the task needs:
+
+1. **This file**: the stable contract (commands, conventions, exit codes). Changes rarely.
+2. **`gen models`**: the endpoints Dennis actually uses, with defaults, rough costs, and quirk notes. Changes when taste changes.
+3. **`gen inspect <provider@ref>`**: the live input/output schema of one endpoint, fetched from the provider seconds before you write the input. This is the only trustworthy source for model parameters; never assume fields from memory and never copy them from old receipts or docs.
+
+The operating loop:
+
+```
+gen inspect <endpoint>              # learn the real fields
+gen run <endpoint> --input '{...}'  # declare what you want, natively
+                                    # exit 0: read outPaths from the JSON result
+                                    # exit 2: fix the named fields and re-run
+                                    # exit 3: content-flagged; rewrite the prompt, do not retry
+                                    # exit 4: missing API key; tell the user
+                                    # exit 5: timed out; job was cancelled, consider --timeout
+```
+
+Piped output is always JSON (no flag needed). Progress and provider logs arrive on stderr and are safe to ignore. Anything not covered here: the provider docs indexed at the llms.txt links at the bottom are canon.
+
 ## Setup
 
 ```bash
