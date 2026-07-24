@@ -1,0 +1,68 @@
+{
+  "_note": "Address book, not a schema store. Keyed by provider@ref. Per entry: defaults (in the model's NATIVE field names, shallow-merged under your input, your input wins), estCostUsd (rough, for dry-run totals), timeoutSec (override of the 15 min default), notes (free text for whoever writes the input; gen inspect gives the live schema). Any endpoint works without an entry here.",
+
+  "replicate@google/nano-banana-2": {
+    "defaults": { "aspect_ratio": "9:16", "resolution": "2K", "output_format": "png" },
+    "estCostUsd": 0.04,
+    "notes": "Usual image default. Reference images go in image_input (array of URLs)."
+  },
+  "replicate@openai/gpt-image-2": {
+    "defaults": { "aspect_ratio": "9:16", "quality": "high", "output_format": "png" },
+    "estCostUsd": 0.04
+  },
+  "replicate@black-forest-labs/flux-2-max": {
+    "defaults": { "aspect_ratio": "9:16", "resolution": "2 MP", "output_format": "png" },
+    "estCostUsd": 0.04,
+    "notes": "Reference images go in input_images (array of URLs)."
+  },
+  "replicate@black-forest-labs/flux-2-klein-4b": {
+    "defaults": { "aspect_ratio": "9:16", "output_megapixels": "2", "output_format": "png" },
+    "estCostUsd": 0.01,
+    "notes": "Cheapest image model here; good for smoke tests."
+  },
+  "replicate@bytedance/seedream-5-lite": {
+    "defaults": { "aspect_ratio": "9:16", "size": "2K", "output_format": "png" },
+    "estCostUsd": 0.04
+  },
+
+  "replicate@xai/grok-imagine-video-1.5": {
+    "defaults": { "resolution": "720p", "aspect_ratio": "9:16" },
+    "estCostUsd": 1.2,
+    "notes": "Usual video default."
+  },
+  "replicate@bytedance/seedance-2.0-fast": {
+    "defaults": { "resolution": "720p", "aspect_ratio": "9:16", "generate_audio": false },
+    "estCostUsd": 1.2,
+    "notes": "i2v only: needs a start image; fails on pure text-to-video."
+  },
+  "replicate@kwaivgi/kling-v3-video": {
+    "defaults": { "mode": "pro", "aspect_ratio": "9:16", "generate_audio": false },
+    "estCostUsd": 1.2,
+    "notes": "Start image field is start_image. Supports t2v (omit start_image)."
+  },
+  "replicate@openai/sora-2-pro": {
+    "defaults": { "resolution": "standard", "aspect_ratio": "portrait" },
+    "estCostUsd": 1.2,
+    "notes": "Quirks: i2v image field is input_reference; duration field is seconds and only 4, 8 or 12; aspect_ratio is portrait|landscape, not 9:16."
+  },
+  "replicate@alibaba/happyhorse-1.0": {
+    "defaults": { "resolution": "720p" },
+    "estCostUsd": 1.2,
+    "notes": "Fallback video model."
+  },
+
+  "fal@fal-ai/elevenlabs/tts/eleven-v3": {
+    "estCostUsd": 0.06,
+    "notes": "TTS via fal. Fields: text, voice (name, e.g. Rachel), stability, similarity_boost, style, speed, apply_text_normalization. For request stitching or word timestamps use the direct elevenlabs provider instead."
+  },
+  "fal@fal-ai/elevenlabs/music": {
+    "defaults": { "output_format": "mp3_44100_128" },
+    "estCostUsd": 0.1,
+    "notes": "Music generation. Fields: prompt, music_length_ms, force_instrumental."
+  },
+  "fal@fal-ai/elevenlabs/speech-to-text/scribe-v2": {
+    "defaults": { "tag_audio_events": false, "diarize": false },
+    "estCostUsd": 0.01,
+    "notes": "STT with word-level timestamps. Fields: audio_url, language_code (e.g. eng), keyterms (max 100 items, 50 chars each)."
+  }
+}
