@@ -4,6 +4,7 @@
  * and a hard timeout, land the output bytes on disk, write the receipt, and
  * index the run in runs.jsonl.
  */
+import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { GatewayError, classifyError, formatError } from './errors.js';
@@ -31,6 +32,25 @@ export const adapters: Record<Provider, ProviderAdapter> = {
 };
 
 const DEFAULT_TIMEOUT_SEC = 15 * 60;
+
+/**
+ * Same file + same provider = one upload per process, even when parallel
+ * batch jobs resolve it simultaneously (the cache stores the promise, so
+ * concurrent callers share the in-flight upload).
+ */
+const uploadCache = new Map<string, Promise<string>>();
+
+function cachedUpload(adapter: ProviderAdapter, filePath: string, tag: string): Promise<string> {
+  const hash = crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex').slice(0, 20);
+  const key = `${adapter.name}:${hash}`;
+  const inFlight = uploadCache.get(key);
+  if (inFlight) return inFlight;
+  info(`${tag}uploading @file ${filePath} to ${adapter.name}...`);
+  const upload = adapter.upload(filePath);
+  uploadCache.set(key, upload);
+  upload.catch(() => uploadCache.delete(key));
+  return upload;
+}
 
 export interface RunJobOptions {
   endpointId: string;
@@ -75,10 +95,9 @@ export async function runJob(opts: RunJobOptions): Promise<RunJobSuccess> {
   const tag = opts.label ? `[${opts.label}] ` : '';
 
   const merged = mergeDefaults(endpoint.id, opts.input);
-  const resolvedInput = (await resolveFileValues(merged, (p) => {
-    info(`${tag}uploading @file ${p} to ${endpoint.provider}...`);
-    return adapter.upload(p);
-  })) as Record<string, unknown>;
+  const resolvedInput = (await resolveFileValues(merged, (p) =>
+    cachedUpload(adapter, p, tag),
+  )) as Record<string, unknown>;
 
   const timeoutSec = opts.timeoutSec ?? entry?.timeoutSec ?? DEFAULT_TIMEOUT_SEC;
   const controller = new AbortController();

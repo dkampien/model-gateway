@@ -119,9 +119,9 @@ async function cmdBatch(argv: string[]): Promise<void> {
     const jobs = loadJobs(jobsFile);
     const est = estimateBatch(jobs);
     result(
-      { jobs: jobs.length, totalKnownCostUsd: est.totalKnown, unknownCostJobs: est.unknownCount },
+      { jobs: est.jobs, totalKnownCostUsd: est.totalKnown, unknownCostJobs: est.unknownCount },
       [
-        `${jobs.length} jobs:`,
+        `${jobs.length} jobs (effective inputs, registry defaults merged):`,
         ...est.lines,
         `estimated total: ~$${est.totalKnown.toFixed(2)}${est.unknownCount > 0 ? ` plus ${est.unknownCount} of unknown cost` : ''}`,
         'dry run: nothing was submitted.',

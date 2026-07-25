@@ -1,6 +1,6 @@
 ---
 created: 2026-07-24
-updated: 2026-07-24
+updated: 2026-07-25
 ---
 
 # model-gateway
@@ -52,7 +52,7 @@ gen inspect replicate@bytedance/seedance-1-pro          # live schema, cached; -
 gen run replicate@google/nano-banana-2 \
   --input '{"prompt": "a lighthouse at dawn"}' \
   -o out/lighthouse.png                                  # -o optional; default lands in out/
-gen batch jobs.json --dry-run                            # print jobs + cost estimate, zero spend
+gen batch jobs.json --dry-run                            # per-job EFFECTIVE inputs (registry defaults merged) + cost, zero spend
 gen batch jobs.json --concurrency 4                      # run; re-run resumes; --retry-failed
 gen status <request-id>                                  # live provider status
 gen cancel <request-id>

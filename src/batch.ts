@@ -13,7 +13,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { formatError } from './errors.js';
 import { info, warn } from './log.js';
-import { getEntry, parseEndpointId } from './registry.js';
+import { getEntry, mergeDefaults, parseEndpointId } from './registry.js';
 import { runJob } from './gateway.js';
 
 export interface BatchJob {
@@ -80,7 +80,27 @@ function saveManifest(jobsFile: string, manifest: Manifest): void {
   fs.writeFileSync(manifestPath(jobsFile), JSON.stringify(manifest, null, 2) + '\n');
 }
 
-export function estimateBatch(jobs: BatchJob[]): { lines: string[]; totalKnown: number; unknownCount: number } {
+/**
+ * The dry-run shows each job's EFFECTIVE input: the caller's fields merged
+ * over the registry defaults, i.e. exactly what the provider will receive
+ * (with @file values still unresolved, shown as written). Reviewing the
+ * jobs file alone is not enough; defaults merge silently.
+ */
+export interface EstimatedJob {
+  id: string;
+  endpoint: string;
+  estCostUsd?: number;
+  effectiveInput: Record<string, unknown>;
+  out?: string;
+}
+
+export function estimateBatch(jobs: BatchJob[]): {
+  jobs: EstimatedJob[];
+  lines: string[];
+  totalKnown: number;
+  unknownCount: number;
+} {
+  const estimated: EstimatedJob[] = [];
   const lines: string[] = [];
   let totalKnown = 0;
   let unknownCount = 0;
@@ -88,9 +108,17 @@ export function estimateBatch(jobs: BatchJob[]): { lines: string[]; totalKnown: 
     const cost = getEntry(job.endpoint)?.estCostUsd;
     if (cost === undefined) unknownCount++;
     else totalKnown += cost;
-    lines.push(`  ${job.id}  ${job.endpoint}  ${cost !== undefined ? `~$${cost.toFixed(2)}` : 'cost unknown'}`);
+    const effectiveInput = mergeDefaults(job.endpoint, job.input);
+    estimated.push({ id: job.id, endpoint: job.endpoint, estCostUsd: cost, effectiveInput, out: job.out });
+    lines.push(`${job.id}  ${job.endpoint}  ${cost !== undefined ? `~$${cost.toFixed(2)}` : 'cost unknown'}`);
+    for (const [field, value] of Object.entries(effectiveInput)) {
+      const json = JSON.stringify(value);
+      const shown = json.length > 110 ? `${json.slice(0, 110)}..."` : json;
+      const fromDefaults = field in job.input ? '' : '   (registry default)';
+      lines.push(`    ${field}: ${shown}${fromDefaults}`);
+    }
   }
-  return { lines, totalKnown, unknownCount };
+  return { jobs: estimated, lines, totalKnown, unknownCount };
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
