@@ -45,6 +45,11 @@ export interface ProviderAdapter {
   run(args: RunArgs): Promise<JobResult>;
   /** Upload a local file, return a URL usable in inputs. */
   upload(filePath: string): Promise<string>;
+  /**
+   * The adapter embeds @file input values itself (e.g. multipart bodies).
+   * When true the gateway passes @file strings through unresolved.
+   */
+  handlesFileValues?: boolean;
   /** Fetch the endpoint's live schema (shape is provider-specific). */
   inspect(ref: string): Promise<InspectResult>;
   status?(ref: string, requestId: string): Promise<unknown>;

@@ -80,10 +80,14 @@ function defaultOutBase(ref: string): string {
   return path.join(PROJECT_ROOT, 'out', `${ts}-${slug(ref)}`);
 }
 
-/** Strip a known media extension so ext choice stays with the result. */
+/**
+ * Strip a known media extension so ext choice stays with the result.
+ * An extension must contain a letter: numeric tails like `.55` in
+ * offset-bearing names (seg4-055.55) are part of the name.
+ */
 function splitOutArg(out: string): { base: string; forcedExt: string | null } {
   const ext = path.extname(out);
-  return ext !== '' && ext.length <= 6
+  return ext !== '' && ext.length <= 6 && /[a-zA-Z]/.test(ext)
     ? { base: out.slice(0, -ext.length), forcedExt: ext }
     : { base: out, forcedExt: null };
 }
@@ -95,9 +99,9 @@ export async function runJob(opts: RunJobOptions): Promise<RunJobSuccess> {
   const tag = opts.label ? `[${opts.label}] ` : '';
 
   const merged = mergeDefaults(endpoint.id, opts.input);
-  const resolvedInput = (await resolveFileValues(merged, (p) =>
-    cachedUpload(adapter, p, tag),
-  )) as Record<string, unknown>;
+  const resolvedInput = adapter.handlesFileValues
+    ? merged
+    : ((await resolveFileValues(merged, (p) => cachedUpload(adapter, p, tag))) as Record<string, unknown>);
 
   const timeoutSec = opts.timeoutSec ?? entry?.timeoutSec ?? DEFAULT_TIMEOUT_SEC;
   const controller = new AbortController();

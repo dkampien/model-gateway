@@ -11,14 +11,27 @@
  *                                             here to a word-level
  *                                             .timing.json sidecar
  *   music                                     audio bytes back
+ *   speech-to-speech/{voiceId}                voice changer; multipart body;
+ *                                             input {"audio": "@file.wav",
+ *                                             "model_id": ...}; timing of the
+ *                                             source performance is preserved
+ *   audio-isolation                           strip background from speech;
+ *                                             multipart; input {"audio": "@f"}
  *   models   (GET)                            list available models
  *   voices   (GET, /v2)                       search voices, e.g.
  *                                             input {"search": "Rachel"}
  *
+ * Multipart refs embed @file input values directly in the request body
+ * (this provider has no file storage), so the adapter sets
+ * handlesFileValues and the gateway passes @ strings through untouched.
+ *
  * One lift: `output_format` inside the input is moved to the query string
  * because that is where this API takes it (default mp3_44100_128).
  */
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { GatewayError } from '../errors.js';
+import { mimeFor } from '../files.js';
 import type { InspectResult, JobResult, ProviderAdapter, RunArgs } from './types.js';
 import { requireEnv } from './types.js';
 
@@ -28,6 +41,30 @@ const GET_REFS: Record<string, string> = {
   models: '/v1/models',
   voices: '/v2/voices',
 };
+
+function isMultipartRef(ref: string): boolean {
+  return ref.startsWith('speech-to-speech/') || ref === 'audio-isolation';
+}
+
+/** Input object -> FormData: @file strings become file parts, objects JSON. */
+function buildFormData(input: Record<string, unknown>): FormData {
+  const form = new FormData();
+  for (const [key, value] of Object.entries(input)) {
+    if (typeof value === 'string' && value.startsWith('@') && !value.startsWith('@@')) {
+      const filePath = value.slice(1);
+      if (!fs.existsSync(filePath)) throw new Error(`@file input not found: ${filePath}`);
+      const buf = fs.readFileSync(filePath);
+      form.append(key, new Blob([new Uint8Array(buf)], { type: mimeFor(filePath) }), path.basename(filePath));
+    } else if (typeof value === 'string' && value.startsWith('@@')) {
+      form.append(key, value.slice(1));
+    } else if (value !== null && typeof value === 'object') {
+      form.append(key, JSON.stringify(value));
+    } else {
+      form.append(key, String(value));
+    }
+  }
+  return form;
+}
 
 function extForFormat(format: string): string {
   if (format.startsWith('mp3')) return '.mp3';
@@ -80,6 +117,12 @@ async function run({ ref, input, signal, onUpdate }: RunArgs): Promise<JobResult
     ).toString();
     url = `${API}${GET_REFS[ref]}${params ? `?${params}` : ''}`;
     init = { method: 'GET', headers: { 'xi-api-key': key }, signal };
+  } else if (isMultipartRef(ref)) {
+    const { output_format, ...body } = input;
+    const format = typeof output_format === 'string' ? output_format : 'mp3_44100_128';
+    url = `${API}/v1/${ref}?output_format=${encodeURIComponent(format)}`;
+    // Content-Type stays unset so fetch writes the multipart boundary.
+    init = { method: 'POST', headers: { 'xi-api-key': key }, body: buildFormData(body), signal };
   } else {
     const { output_format, ...body } = input;
     const format = typeof output_format === 'string' ? output_format : 'mp3_44100_128';
@@ -150,4 +193,5 @@ export const elevenlabsAdapter: ProviderAdapter = {
   run,
   upload,
   inspect,
+  handlesFileValues: true,
 };
