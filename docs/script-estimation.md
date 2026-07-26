@@ -57,3 +57,20 @@ To calibrate a brand-new model: one short script with a known clap count, one ta
 Anchor line, counted at 45 claps, one `...`, ends on a short hang:
 45 ÷ 4.3 ≈ 10.5 talking, + 1 breathing, + a short hang ≈ 12. **Container: 12 seconds.**
 Generated: talking measured to 11.2s, pause landed on the dots, 0.8s of air trimmed off the tail. Done.
+
+## Appendix: the beat sheet
+
+One row per beat, five columns. Plan on the left, truth on the right.
+
+| beat | script | visual | est s | truth s |
+|---|---|---|---|---|
+| anchor-open | TERRY: "Just in... the future looks dark for Christian households in America. ..." [hand-off gesture at end] | studio two-shot behind desk, CRT with red 7 at frame left | 12 | 11.2 → cut 12.0 |
+| shelly-outro | SHELLY: "Extraordinary!" [turns to lens] "There you have it, Terry. Back to you." [van crosses, hold smile] | street single on reporter, from last frame of previous beat | 8 | 4.7 → cut 7.5 |
+
+- **beat**: the name; it becomes the clip's filename and job id.
+- **script**: speaker, the spoken words with their pacing marks, wordless actions in [brackets] where they happen. This one cell is both what you count (moves 2 and 3) and what goes into the prompt, so nothing lives in two places.
+- **visual**: what the shot is and where its first frame comes from (a chained last frame, a reframed still, a fresh image). The continuity column.
+- **est s**: the container you computed and typed (move 3).
+- **truth s**: filled after the after-check: where the talking ended → where you cut.
+
+Estimate against truth, row after row, is also the calibration: when est and truth drift apart consistently, re-measure the model's speed (recount any row's script and divide by its truth).
