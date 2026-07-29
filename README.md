@@ -25,7 +25,7 @@ Each key is only required when calling that provider. Run everything through the
 
 ## Operating guide
 
-The full operating guide (commands, conventions, spend policy, and when to read which doc) lives in the **model-gateway skill** at `~/.claude/skills/model-gateway/SKILL.md`. It is written for agents and humans alike and is the single source for how to drive the CLI. Quick taste:
+The full operating guide (commands, conventions, spend policy, and when to read which doc) is the **model-gateway skill** at `skill/SKILL.md` in this repo, the canonical copy, written for agents and humans alike. To make it trigger automatically in Claude Code sessions, install it by copying: `cp -r skill ~/.claude/skills/model-gateway` (re-copy after editing the canonical one). Quick taste:
 
 ```bash
 ./gen help

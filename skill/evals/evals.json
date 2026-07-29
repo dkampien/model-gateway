@@ -1,0 +1,41 @@
+{
+  "skill_name": "model-gateway",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "hey can you make me a quick image of a golden retriever puppy asleep on an open bible, warm morning light? vertical format for a story post",
+      "expected_output": "Agent uses the gen CLI (not a hand-written API script), picks a registry image endpoint, runs it with a native-schema input at 9:16, reports output file path and receipt.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "what video generation models do we have set up, and what exact input fields does the kling one accept? i might need a clip with a start and end frame",
+      "expected_output": "Agent runs gen models and gen inspect on kling-v3, reports kling's real fields including start_image and end_image without guessing from memory. Zero spend.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "i have a script for a talking-head clip: 'Every morning she opens the app before her coffee. Three weeks in... her kids started asking questions she'd been waiting years to hear.' how long should the video clip be and how would you generate it? don't generate anything yet, just plan it",
+      "expected_output": "Agent finds docs/script-estimation.md via the skill pointer, counts syllables in spoken form, applies the formula, recommends a container duration around 10-13s, names the gen command it would run. Zero spend.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "im trying to pick an image model for our devotional cards. can you run the same prompt on like 3 different image models so i can compare? prompt: 'a sunlit kitchen table with an open journal, coffee cup, and a small cross necklace laid on it, soft film look'. keep it cheap",
+      "expected_output": "Agent builds one jobs file with the same prompt on ~3 image endpoints in each model's native fields, dry-runs it first, runs the batch, reports the side-by-side output files.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "i keep hearing ideogram is really good at rendering text inside images. can you check what ideogram-ai/ideogram-v3-turbo takes on replicate and add it to our model menu with sensible defaults? dont generate anything with it yet",
+      "expected_output": "Agent inspects the unregistered endpoint live, then adds a registry.json entry with native-field defaults, a cost estimate, and quirk notes. Zero generation spend.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "can you make me a short mp3 voiceover of this line: 'Grace isn't earned. It's given.' warm female voice, not too fast",
+      "expected_output": "Agent finds a voice via the gateway (gen run elevenlabs@voices search), runs TTS through the elevenlabs endpoint, delivers an mp3 file path. Costs a few ElevenLabs credits.",
+      "files": []
+    }
+  ]
+}
