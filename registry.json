@@ -59,6 +59,16 @@
     "estCostUsd": 1.2,
     "notes": "Usual video default."
   },
+  "replicate@bytedance/seedance-2.5": {
+    "defaults": {
+      "resolution": "480p",
+      "duration": 4,
+      "aspect_ratio": "adaptive",
+      "generate_audio": false
+    },
+    "estCostUsd": 0.41,
+    "notes": "Seedance 2.5. Image-to-video: the start image goes in image (adaptive keeps its 9:16). About $0.103 per output second at 480p, $0.231 at 720p; duration is whole seconds. reference_images (up to 30) cannot be combined with image."
+  },
   "replicate@bytedance/seedance-2.0-fast": {
     "defaults": {
       "resolution": "720p",
