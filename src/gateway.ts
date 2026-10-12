@@ -158,7 +158,7 @@ export async function runJob(opts: RunJobOptions): Promise<RunJobSuccess> {
     result = await withRetry(
       async () => {
         attempts++;
-        return adapter.run({
+        const r = await adapter.run({
           ref: endpoint.ref,
           input: resolvedInput,
           signal: controller.signal,
@@ -181,6 +181,16 @@ export async function runJob(opts: RunJobOptions): Promise<RunJobSuccess> {
             if (u.logLine) info(`${tag}| ${u.logLine}`);
           },
         });
+        // A provider can report success with nothing in it (null, '', []): that is a failed job to retry, not a result to land.
+        const o = r.output;
+        if (!r.binary && !r.dataOnly && (o == null || o === '' || (Array.isArray(o) && o.length === 0))) {
+          throw new GatewayError(`${endpoint.id} returned no output`, {
+            kind: 'transient',
+            provider: endpoint.provider,
+            requestId: r.requestId ?? requestId ?? undefined,
+          });
+        }
+        return r;
       },
       {
         provider: endpoint.provider,
