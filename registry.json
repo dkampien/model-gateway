@@ -146,5 +146,30 @@
     },
     "estCostUsd": 0.05,
     "notes": "Wan 2.2 image-to-video fast: the start image goes in image. No duration field: 81 frames at 16 fps, about 5 s. $0.05 per clip at 480p, $0.065 with interpolation."
+  },
+  "fal@xai/grok-imagine-video/v1.5/lite/image-to-video": {
+    "defaults": {
+      "resolution": "480p",
+      "duration": 4
+    },
+    "estCostUsd": 0.09,
+    "notes": "Grok Imagine 1.5 lite on fal, image-to-video: the start image goes in image_url, duration in whole seconds. $0.02 per second at 480p ($0.03 at 720p) plus $0.01 per input image: $0.09 for 4 s, $0.11 for 5 s. No aspect field (follows the image); the output carries an audio track. The song-ads lane's video default."
+  },
+  "fal@blackforestlabs/flux-3/first-last-frame-to-video": {
+    "defaults": {
+      "resolution": "720p",
+      "aspect_ratio": "9:16",
+      "generate_audio": false
+    },
+    "estCostUsd": 0.85,
+    "notes": "Flux 3 first-and-last-frame on fal: start_image_url and end_image_url, duration 5 to 20 s, 720p or 1080p. The page says $0.17 per second at 720p ($0.85 for 5 s); fal's pricing API says $0.085 per seconds-unit, half, most likely a 720p second billed as two units."
+  },
+  "fal@blackforestlabs/flux-3/first-last-frame-to-video/draft": {
+    "defaults": {
+      "aspect_ratio": "9:16",
+      "generate_audio": false
+    },
+    "estCostUsd": 0.3,
+    "notes": "Flux 3 first-and-last-frame draft on fal (720p): $0.06 per second on the page ($0.30 for 5 s), $0.03 per seconds-unit in the pricing API. Returns a draft cache token beside the clip, for a later full-quality enhancement."
   }
 }
