@@ -120,5 +120,31 @@
     },
     "estCostUsd": 0.01,
     "notes": "STT with word-level timestamps. Fields: audio_url, language_code (e.g. eng), keyterms (max 100 items, 50 chars each)."
+  },
+  "fal@fal-ai/bytedance/seedance/v1/pro/fast/image-to-video": {
+    "defaults": {
+      "resolution": "480p",
+      "aspect_ratio": "9:16",
+      "duration": "4"
+    },
+    "estCostUsd": 0.04,
+    "notes": "Seedance 1 pro fast on fal, image-to-video: the start image goes in image_url, duration is a string (2 to 12). Billed by tokens ($1.0 per million); about $0.039 for 4 s at 480p. Resolution defaults to 1080p upstream, so it is set here."
+  },
+  "fal@fal-ai/bytedance/seedance/v1.5/pro/image-to-video": {
+    "defaults": {
+      "resolution": "480p",
+      "aspect_ratio": "9:16",
+      "duration": "4",
+      "generate_audio": false
+    },
+    "estCostUsd": 0.05,
+    "notes": "Seedance 1.5 pro on fal, image-to-video: the start image goes in image_url, duration is a string (4 to 12). Billed by tokens ($1.2 per million without audio); about $0.047 for 4 s at 480p. Audio defaults on upstream and doubles the price, so it is off here; aspect defaults to 16:9 upstream."
+  },
+  "replicate@wan-video/wan-2.2-i2v-fast": {
+    "defaults": {
+      "resolution": "480p"
+    },
+    "estCostUsd": 0.05,
+    "notes": "Wan 2.2 image-to-video fast: the start image goes in image. No duration field: 81 frames at 16 fps, about 5 s. $0.05 per clip at 480p, $0.065 with interpolation."
   }
 }
