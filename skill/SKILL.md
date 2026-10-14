@@ -31,6 +31,7 @@ Endpoints are `provider@ref` (e.g. `replicate@google/nano-banana-2`). Inputs are
 - **`@file` values**: any input string starting with `@` is a local file path; it uploads to the provider automatically and the URL lands in that same field (`"start_image": "@./frame.png"`). A literal leading `@` escapes as `@@`.
 - **Receipts**: every run writes `<output>.receipt.json` (exact input, request id, cost) beside the output, and appends to `runs.jsonl` at the gateway root; that index is what `status`/`cancel` look up.
 - **Batch jobs file**: a JSON array; re-running skips completed items, `--retry-failed` reruns failures only.
+- **Retries, limits, fallback**: a rate limit (429), a provider fault (5xx) or a dropped connection is retried up to 4 attempts with doubling, jittered waits from 5 s (`GEN_RETRY_ATTEMPTS`, `GEN_RETRY_BASE_MS`); then the job goes once to the entry's `fallback` in `registry.json` when one is named, else fails with one line naming the attempts. Every gen process on the machine shares a cap on jobs in flight per provider (replicate 16, fal 16, elevenlabs 4; `GEN_SLOTS_FAL=24` overrides), so parallel runs queue instead of tripping rate limits. `GEN_TEST_FAIL=429` (or 503, reset) makes each attempt fail that way before anything is sent: the retry path, tested for free.
 
 ```json
 [{ "id": "name", "endpoint": "provider@ref", "input": { ... }, "out": "optional/path" }]

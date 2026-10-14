@@ -1,8 +1,13 @@
 /**
  * runJob: the one verb. Merge registry defaults under the caller's input,
- * resolve @file values through the provider's uploader, dispatch with retry
- * and a hard timeout, land the output bytes on disk, write the receipt, and
- * index the run in runs.jsonl.
+ * resolve @file values through the provider's uploader, take one of the
+ * provider's slots (a limit on jobs in flight across processes, slots.ts),
+ * dispatch with retry and a hard timeout, land the output bytes on disk,
+ * write the receipt, and index the run in runs.jsonl. When the retries on a
+ * rate limit or a provider fault run out, the job goes once to the entry's
+ * named fallback (registry.json "fallback"), else fails with one line saying
+ * what was tried. GEN_TEST_FAIL=429 (or 503, or reset) makes every attempt
+ * fail that way before anything is sent, to exercise this path for free.
  */
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
@@ -19,6 +24,7 @@ import {
 import { info, warn } from './log.js';
 import { PROJECT_ROOT, getEntry, mergeDefaults, parseEndpointId, type Provider } from './registry.js';
 import { withRetry } from './retry.js';
+import { acquireSlot } from './slots.js';
 import { appendRun } from './runs.js';
 import { elevenlabsAdapter } from './providers/elevenlabs.js';
 import { falAdapter } from './providers/fal.js';
@@ -59,6 +65,15 @@ export interface RunJobOptions {
   timeoutSec?: number;
   /** Prefix for progress lines, used by batch items. */
   label?: string;
+  /** Set on the fallback's own run, so a fallback never falls back again. */
+  isFallback?: boolean;
+}
+
+/** The error a provider would raise, made up for GEN_TEST_FAIL: nothing is submitted. */
+function testFailure(kind: string): Error {
+  if (kind === 'reset') return new Error('test failure: socket hang up (econnreset)');
+  const status = Number(kind) || 429;
+  return Object.assign(new Error(`test failure: HTTP ${status}`), { status });
 }
 
 export interface RunJobSuccess {
@@ -153,11 +168,13 @@ export async function runJob(opts: RunJobOptions): Promise<RunJobSuccess> {
     return receiptPath;
   };
 
+  const release = await acquireSlot(endpoint.provider, tag);
   let result: JobResult;
   try {
     result = await withRetry(
       async () => {
         attempts++;
+        if (process.env.GEN_TEST_FAIL) throw testFailure(process.env.GEN_TEST_FAIL);
         const r = await adapter.run({
           ref: endpoint.ref,
           input: resolvedInput,
@@ -194,12 +211,15 @@ export async function runJob(opts: RunJobOptions): Promise<RunJobSuccess> {
       },
       {
         provider: endpoint.provider,
+        maxAttempts: Number(process.env.GEN_RETRY_ATTEMPTS) || 4,
+        baseDelayMs: Number(process.env.GEN_RETRY_BASE_MS) || 5000,
         onRetry: ({ attempt, maxAttempts, delayMs, kind, message }) =>
-          warn(`${tag}${kind} error, retry ${attempt}/${maxAttempts - 1} in ${Math.round(delayMs / 1000)}s: ${message}`),
+          warn(`${tag}${kind} error, retry ${attempt}/${maxAttempts - 1} in ${(delayMs / 1000).toFixed(1)}s: ${message}`),
       },
     );
   } catch (error) {
     clearTimeout(timer);
+    release();
     if (timedOut) {
       if (requestId && adapter.cancel) {
         await adapter.cancel(endpoint.ref, requestId).catch(() => undefined);
@@ -212,8 +232,14 @@ export async function runJob(opts: RunJobOptions): Promise<RunJobSuccess> {
     }
     const kind = classifyError(error, endpoint.provider);
     finish('failed', null, [], formatError(error));
-    if (error instanceof GatewayError) throw error;
-    throw new GatewayError(`${endpoint.id} failed (${kind}): ${formatError(error)}`, {
+    const exhausted = kind === 'rate_limit' || kind === 'transient';
+    if (exhausted && entry?.fallback && !opts.isFallback) {
+      warn(`${tag}${endpoint.id}: ${kind} after ${attempts} attempts, falling back to ${entry.fallback}`);
+      return runJob({ ...opts, endpointId: entry.fallback, isFallback: true });
+    }
+    if (error instanceof GatewayError && !exhausted) throw error;
+    const tail = exhausted ? (opts.isFallback ? ' (this was the fallback)' : '; no fallback named for it in registry.json') : '';
+    throw new GatewayError(`${endpoint.id} failed after ${attempts} attempt${attempts === 1 ? '' : 's'} (${kind}): ${formatError(error)}${tail}`, {
       kind,
       provider: endpoint.provider,
       requestId: requestId ?? undefined,
@@ -222,8 +248,9 @@ export async function runJob(opts: RunJobOptions): Promise<RunJobSuccess> {
   }
   clearTimeout(timer);
 
-  // Land the result on disk: direct bytes, else URLs, else the raw JSON.
+  // Land the result on disk: direct bytes, else URLs, else the raw JSON. The slot is held until it has landed.
   const outPaths: string[] = [];
+  try {
   if (result.binary) {
     const outPath = `${base}${forcedExt ?? result.binary.ext}`;
     fs.mkdirSync(path.dirname(outPath), { recursive: true });
@@ -250,6 +277,9 @@ export async function runJob(opts: RunJobOptions): Promise<RunJobSuccess> {
   }
   for (const sidecar of result.sidecars ?? []) {
     fs.writeFileSync(`${base}${sidecar.suffix}`, JSON.stringify(sidecar.data, null, 2) + '\n');
+  }
+  } finally {
+    release();
   }
 
   const receiptPath = finish('done', result, outPaths);

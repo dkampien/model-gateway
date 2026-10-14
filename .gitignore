@@ -5,3 +5,4 @@ schema-cache/
 runs.jsonl
 _reference-repos/
 .DS_Store
+.slots/

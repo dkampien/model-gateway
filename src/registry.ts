@@ -5,8 +5,8 @@
  *
  * registry.json is an address book, never a schema store: optional per-endpoint
  * defaults (in the model's native field names, shallow-merged, caller wins),
- * a rough cost figure for dry-run estimates, a timeout override, and free-text
- * notes. Any endpoint works without an entry.
+ * a rough cost figure for dry-run estimates, a timeout override, free-text
+ * notes, and an optional fallback endpoint for when retries run out. Any endpoint works without an entry.
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -28,6 +28,8 @@ export interface RegistryEntry {
   estCostUsd?: number;
   timeoutSec?: number;
   notes?: string;
+  /** Another endpoint id taking the same input, tried once when this one's retries on a rate limit or provider fault run out. */
+  fallback?: string;
 }
 
 export function parseEndpointId(id: string): EndpointId {
