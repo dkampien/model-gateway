@@ -8,7 +8,7 @@ description: Generate AI media through the local `gen` CLI (the model gateway) i
 One CLI reaches Replicate, fal.ai, and ElevenLabs with retries, receipts, and parallel batches built in. It lives at:
 
 ```
-/Users/dennisk/Documents/project - model-gateway/
+/Users/dennisk/Hub/focus/project - model-gateway/
 ```
 
 Run it as `./gen <command>` from that directory. Never write a fresh API script for a generation task; the gateway is the way.
