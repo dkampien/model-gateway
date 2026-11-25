@@ -17,6 +17,12 @@
  *                                             source performance is preserved
  *   audio-isolation                           strip background from speech;
  *                                             multipart; input {"audio": "@f"}
+ *   speech-to-text                            transcription (Scribe); multipart;
+ *                                             input {"file": "@f", "model_id":
+ *                                             "scribe_v3", "diarize": true};
+ *                                             JSON back: text + words with
+ *                                             timestamps and speaker ids;
+ *                                             audio or video up to 5 GB
  *   models   (GET)                            list available models
  *   voices   (GET, /v2)                       search voices, e.g.
  *                                             input {"search": "Rachel"}
@@ -25,8 +31,9 @@
  * (this provider has no file storage), so the adapter sets
  * handlesFileValues and the gateway passes @ strings through untouched.
  *
- * One lift: `output_format` inside the input is moved to the query string
- * because that is where this API takes it (default mp3_44100_128).
+ * One lift: on the refs that return audio, `output_format` inside the input
+ * is moved to the query string because that is where this API takes it
+ * (default mp3_44100_128). speech-to-text returns JSON and takes no format.
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -37,13 +44,15 @@ import { requireEnv } from './types.js';
 
 const API = 'https://api.elevenlabs.io';
 
+const STT_REF = 'speech-to-text';
+
 const GET_REFS: Record<string, string> = {
   models: '/v1/models',
   voices: '/v2/voices',
 };
 
 function isMultipartRef(ref: string): boolean {
-  return ref.startsWith('speech-to-speech/') || ref === 'audio-isolation';
+  return ref.startsWith('speech-to-speech/') || ref === 'audio-isolation' || ref === STT_REF;
 }
 
 /** Input object -> FormData: @file strings become file parts, objects JSON. */
@@ -117,6 +126,9 @@ async function run({ ref, input, signal, onUpdate }: RunArgs): Promise<JobResult
     ).toString();
     url = `${API}${GET_REFS[ref]}${params ? `?${params}` : ''}`;
     init = { method: 'GET', headers: { 'xi-api-key': key }, signal };
+  } else if (ref === STT_REF) {
+    url = `${API}/v1/${ref}`;
+    init = { method: 'POST', headers: { 'xi-api-key': key }, body: buildFormData(input), signal };
   } else if (isMultipartRef(ref)) {
     const { output_format, ...body } = input;
     const format = typeof output_format === 'string' ? output_format : 'mp3_44100_128';
@@ -184,7 +196,7 @@ async function inspect(ref: string): Promise<InspectResult> {
     provider: 'elevenlabs',
     ref,
     description:
-      'Fixed first-party API, no per-model schema. Refs: text-to-speech/{voiceId} (body: text, model_id, voice_settings{stability,similarity_boost,style,speed}, seed, previous_text, next_text, previous_request_ids, next_request_ids), text-to-speech/{voiceId}/with-timestamps (same body; writes a .timing.json word-level sidecar), music (body: prompt, music_length_ms, force_instrumental), models (GET, lists model ids), voices (GET, input {"search": "name"} to find voice ids). output_format in the input is lifted to the query string, default mp3_44100_128. Canon: https://elevenlabs.io/docs/api-reference',
+      'Fixed first-party API, no per-model schema. Refs: text-to-speech/{voiceId} (body: text, model_id, voice_settings{stability,similarity_boost,style,speed}, seed, previous_text, next_text, previous_request_ids, next_request_ids), text-to-speech/{voiceId}/with-timestamps (same body; writes a .timing.json word-level sidecar), music (body: prompt, music_length_ms, force_instrumental), speech-to-text (multipart; body: file "@path" audio or video up to 5 GB, model_id e.g. scribe_v3, diarize, num_speakers, language_code, timestamps_granularity, tag_audio_events, no_verbatim; returns JSON with text and words carrying start, end and speaker_id), models (GET, lists model ids), voices (GET, input {"search": "name"} to find voice ids). output_format in the input is lifted to the query string, default mp3_44100_128. Canon: https://elevenlabs.io/docs/api-reference',
   };
 }
 

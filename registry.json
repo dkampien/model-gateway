@@ -121,6 +121,16 @@
     "estCostUsd": 0.01,
     "notes": "STT with word-level timestamps. Fields: audio_url, language_code (e.g. eng), keyterms (max 100 items, 50 chars each)."
   },
+  "elevenlabs@speech-to-text": {
+    "defaults": {
+      "model_id": "scribe_v3",
+      "diarize": true,
+      "timestamps_granularity": "word",
+      "tag_audio_events": false
+    },
+    "estCostUsd": 0.4,
+    "notes": "Scribe v3 on ElevenLabs' own API (fal carries v2 only). Fields: file (@path; audio or video up to 5 GB, no splitting needed), num_speakers (max speakers, helps diarization), language_code (auto-detected when omitted), no_verbatim. Returns JSON: text plus words with start, end and speaker_id. Synchronous: pass --timeout generously for long recordings. Cost scales with audio length; estCostUsd is roughly one hour."
+  },
   "fal@fal-ai/bytedance/seedance/v1/pro/fast/image-to-video": {
     "defaults": {
       "resolution": "480p",
